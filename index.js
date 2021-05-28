@@ -2,6 +2,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
+require('dotenv').config()
 
 //Routes Folders injected via Index file
 const EventRoute = require('./Routes/Events')
@@ -45,7 +46,7 @@ mongoose.Promise = global.Promise;
 
 //Handling 404 Error Page not found
 app.use((req, res) => {
-  res.status(404).send({ url: `${req.originalUrl} not found` });
+  res.status(404).send({ url: `404 Error ${req.originalUrl} not found please cross-check the url address` });
 });
 
 //Server Port Connection

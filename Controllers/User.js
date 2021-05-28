@@ -1,5 +1,8 @@
-const { UserDetails, Suggestion } = require("../Models/meetCITADModel");
-const bcrypt = require('bcryptjs')
+const { UserDetails, Suggestion, EventInfos } = require("../Models/meetCITADModel");
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken')
+const transporter = require("../Middleware/mailer")
 
 //User Sign in authentication
 exports.userSignin = (req, res) => {
@@ -10,11 +13,16 @@ exports.userSignin = (req, res) => {
         .then(user => {
             const validPassword = bcrypt.compareSync(password, user.password)
             if (user && validPassword){
-                return res.json(user)
+                const token = jwt.sign({user: user}, process.env.JWT_KEY, {expiresIn: "1h"})
+                return res.json({
+                    message: "Authentication Successfully",
+                    User: user,
+                    userToken: token
+                })
             }
-            res.json({mes: "error, wrong credentials"})
+            res.json({message: "error, wrong credentials"})
             })
-        .catch(err => res.json(err))
+        .catch(err => console.log({error: err}))
 }
 
 //Create user
@@ -48,7 +56,6 @@ exports.createUser = (req, res) => {
 //Get all Users
 exports.usersList = (req, res) => {
     UserDetails.find()
-        
         .then(users => {
             res.json({
                 Users: users
@@ -121,23 +128,110 @@ exports.changePassword = (req, res) => {
 //Post Reset Password
 exports.resetPassword = (req, res) => {
     const email = req.body.email
+    crypto.randomBytes(32, (err, buffer) => {
+        if (err) {
+            return console.log(err)
+        }
+        const token = buffer.toString('hex')
+        UserDetails.findOne({email: email}).then(user => {
+            if (!user) {
+                return res.json({message: "No User with such email."})
+            }
+            user.resetToken = token
+            user.resetTokenExpiration = Date.now() + 3600000
+            return user.save()
+        })
+        .then(response => {
+            // transporter.sendMail({
+            //     to: email,
+            //     from: "citadorganisation@citad.org",
+            //     subject: "Password Reset",
+            //     html: `
+            //         <div style="align: center">
+            //             <h3>Reset your password?</h3>
+            //             <p>If you requested a password reset, use the link below to complete the process. 
+            //             If you didn't make this request, ignore this email.</p>
+            //             <p> <a href="http://localhost:8080/reset-password/${token}"> Set new Password </a> </p>
 
+            //             <p> <center>Thank you!!!</center> </p>
+            //         </div>
+            //     `
+            // })
+            console.log(response)
+        })
+        .catch(err => {
+            res.json({message: err})
+        })
+    })
 }
 
+//Post New Password
+exports.setNewPassword = (req, res) => {
+    const passwordToken = req.params.token
+    UserDetails.findOne({resetToken: passwordToken, resetTokenExpiration: {$gt: Date.now()}}).then(resetUser => {
+        if (!resetUser) {
+            console.log("Cannot find this user")
+        }
+        const newPassword = req.body.password
+        let hashPassword = bcrypt.hashSync(newPassword, 10)
+
+        resetUser.password = hashPassword
+        resetUser.resetToken = undefined
+        resetUser.resetTokenExpiration = undefined
+
+        console.log(resetUser);
+        return resetUser.save()
+    })
+    .then(res => {
+        res.json({respons: res})
+    })
+    .catch(err => {
+        res.json({error: err})
+    })
+}
 
 //Post Registered Events
-exports.registeredEvents =(req, res) => {
+exports.registeredEvents = (req, res) => {
     const eventId = req.params.eventId
     const userId = req.body.userId
-
+    
     UserDetails.findById({_id: userId}).then(user => {
+        let email = user.email
+
+        //Check whether there is registered event of user
         if (user.registeredEvent !== [] && user.registeredEvent.findIndex(ev => ev == eventId) >= 0){
-            return res.json({message: "kham122You already registered this event"})
+            return res.json({message: "You already registered this event"})
         }else {
             user.registeredEvent.push({_id: eventId})
-            user.save().then(res.json({
-                message: "Successfully Registered"
-            }))
+            user.attendance = false
+            user.save()
+            .then(result => {
+            EventInfos.findById({_id: eventId}).then(eventData => {
+                const eventDetail = {
+                    title: eventData.title,
+                    description: eventData.description,
+                    location: eventData.venue,
+                    date: eventData.date.toDateString()
+                }
+                //Sending Sucessful registration to user email
+                // transporter.sendMail({
+                //     to: email,
+                //     from: "citadorganisation@citad.org",
+                //     subject: "Registration Status",
+                //     html: `
+                //         <h3>You Successfully Registered for CITAD's Event </h3>
+                //         <p>Which is ${eventDetail.title}: ${eventDetail.description} that will
+                //             take place at ${eventDetail.location} on ${eventDetail.date.toString()}
+                //         </p>
+
+                //         <p>Thank You, We really appreciated and your attendance really matters.</p>
+                //     `
+                // })
+                res.json({eventDetail, email})
+                }).catch(err => {
+                    console.log(err);
+                })
+            })
         }
     }).catch(err => res.json({error: `${err}`}))
 }
@@ -152,10 +246,15 @@ exports.unRegisteredEvents = (req, res) => {
         if (registeredEvents == [] && registeredEvents.findIndex(ev => ev == eventId) < 0) {
             return res.json({message: "No Registered event"})
         }
+        if (user.registeredEvent.findIndex(ev => ev == eventId) >= 0){
+            user.attendance = false
+        }else {
+            user.attendance = undefined
+        }
         registeredEvents.splice(registeredEvents.findIndex(event => {
             event === eventId
         }), 1)
-        user.save()
+        return user.save()
         .then(() => res.json({
             message: "Successfully Unregistered"
         })).catch(err => {
@@ -166,8 +265,9 @@ exports.unRegisteredEvents = (req, res) => {
 
 //Get Registered Events
 exports.getRegisteredEvents = (req, res) => {
-    UserDetails.findOne({_id: req.query.userId}).select("registeredEvent").populate("registeredEvent", "title description venue time")
-        
+    UserDetails.findOne({_id: req.query.userId})
+    .select("registeredEvent")
+    .populate("registeredEvent", "title description venue time")    
         .then(user => {
             res.status(203).json(user)
         })

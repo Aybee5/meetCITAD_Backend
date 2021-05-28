@@ -1,7 +1,14 @@
 const { EventInfos } = require("../Models/meetCITADModel")
+const path = require('path')
+const fs = require('fs')
 
 //Post Event
 exports.createEvent = (req, res) => {
+    if (!req.file) {
+        return res.json({
+            message: "Please provide the event Image!"
+        })
+    }
     const eventInfo = {
         title: req.body.title,
         description: req.body.description,
@@ -63,6 +70,7 @@ exports.deleteEvent = (req, res) => {
 
     EventInfos.findByIdAndRemove({_id: getId})
     .then (result => {
+            deleteImage(result.eventImage)
             res.json({
                 msg: "Event deleted Successfully!"
             })
@@ -71,4 +79,10 @@ exports.deleteEvent = (req, res) => {
                 msg: `Cannot delete this event ${err}`
             })
         })
+}
+
+//Funcrion to delete images that their event info was deleted
+const deleteImage = (filePath) => {
+    filePath = path.join(__dirname, '../', filePath)
+    fs.unlink(filePath, err => console.log(err))
 }

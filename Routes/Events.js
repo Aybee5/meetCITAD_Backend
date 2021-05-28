@@ -1,24 +1,25 @@
 const express = require('express');
-const { eventUpload } = require('../Storage/Storage')
 
+const { eventUpload } = require('../Storage/Storage')
 const EventController = require('../Controllers/Events')
+const checkAuth = require('../Middleware/Authentication')
 
 const router = express.Router()
 
 //create an event
-router.post('/events', eventUpload,EventController.createEvent)
+router.post('/events', checkAuth, eventUpload,EventController.createEvent)
 
 //retrieve event list /user/events
-router.get('/events', EventController.getEvents)
+router.get('/events', checkAuth, EventController.getEvents)
 
 //retrieve a single event via Id
-router.get('/events/:eventId', EventController.getSingleEvent)
+router.get('/events/:eventId', checkAuth, EventController.getSingleEvent)
 
 //Edit an event
-router.patch('/events/:eventId', EventController.editEvent)
+router.patch('/events/:eventId', checkAuth, EventController.editEvent)
 
 //delete an event
-router.delete('/events/:eventId', EventController.deleteEvent)
+router.delete('/events/:eventId', checkAuth, EventController.deleteEvent)
 
 
 module.exports = router;

@@ -1,5 +1,7 @@
 const { AdminSign, EventInfos, Suggestion } = require("../Models/meetCITADModel")
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+
 //Admin Sign In details
 exports.adminCreate = (req, res) => {
     AdminSign.create({
@@ -17,12 +19,15 @@ exports.adminLogin = (req, res) => {
 
     AdminSign.findOne({email: email})
         .then(admin => {
-            const validPassword = bcrypt.compareSync(password, admin.password)
-            
-            if (admin && validPassword) {
-                return res.json({msg: "Login Succesfully"})
-            }
-            else{
+            const validPassword = bcrypt.compareSync(password, admin.password) //password encryption
+            if (validPassword){
+                const token = jwt.sign({adminInfo: admin}, process.env.JWT_KEY, {expiresIn: "1h"}) //Generating a token
+                return res.json({
+                    message: "Authentication Successfully",
+                    Admin: admin,
+                    adminToken: token
+                })
+            }else{
                 return res.json({
                     msg: "email or password is incorrect"
                 })
@@ -46,6 +51,9 @@ exports.registeredUsers = (req, res) => {
     const userId = req.body.userId
 
     EventInfos.findById({_id: eventId}).then(event => {
+        if (event.registeredUsers !== [] && event.registeredUsers.findIndex(x => x == userId) >= 0){
+            return res.json({msg: "You already a Registered User of this event"})
+        }
         event.registeredUsers.push({_id: userId})
         event.save()
         .then(res.json({
@@ -57,7 +65,7 @@ exports.registeredUsers = (req, res) => {
 
 //Get all Registered Users of an Event
 exports.getRegisteredUsers = (req, res) => {
-    EventInfos.findOne({_id: req.params.eventId}).select("registeredUsers title description").populate("registeredUsers", "fullname email organisation phone gender attendance")
+    EventInfos.findOne({_id: req.params.eventId}).select("registeredUsers title description eventImage").populate("registeredUsers", "fullname email organisation phone gender attendance")
         .then(event => {
             res.status(203).json(event)
         })

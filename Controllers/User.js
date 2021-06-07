@@ -20,7 +20,9 @@ exports.userSignin = (req, res) => {
                     userToken: token
                 })
             }
-            res.json({message: "error, wrong credentials"})
+            res.status(400).json({
+                message: "error, wrong credentials"
+            })
             })
         .catch(err => console.log({error: err}))
 }
@@ -28,8 +30,8 @@ exports.userSignin = (req, res) => {
 //Create user
 exports.createUser = (req, res) => {
     let username = req.body.username
-
-    UserDetails.findOne({username: username})
+    if (username) {
+      UserDetails.findOne({username: username})
         .then(user => {
             if (user && username === user.username) {
                 return res.json({message: "Username already exist"})
@@ -46,12 +48,29 @@ exports.createUser = (req, res) => {
                 UserDetails.create(userInfo)
                     
                     .then(result => {
-                        res.status(201).json(result)
+                        res.status(201).json({result})
                     })
                     .catch(error => res.status(202).json({message: `Data not created ${error}`}))
             }
         })
-}
+    
+    }else {
+      const userAttend = {
+        username: Date.now().toString(32),
+        fullname: req.body.fullname,
+        email: req.body.email,
+        organisation: req.body.organisation,
+        gender: req.body.gender,
+        phone: req.body.phone
+      }
+        UserDetails.create(userAttend)
+        .then(result => {
+            res.status(201).json(result);
+        })
+        .catch(error => res.status(202).json({message: `Data not created ${error}`}))
+    }
+  }
+          
 
 //Get all Users
 exports.usersList = (req, res) => {
@@ -192,21 +211,21 @@ exports.setNewPassword = (req, res) => {
 
 //Post Registered Events
 exports.registeredEvents = (req, res) => {
-    const eventId = req.params.eventId
+    const eventID = req.params.eventID
     const userId = req.body.userId
     
     UserDetails.findById({_id: userId}).then(user => {
         let email = user.email
 
         //Check whether there is registered event of user
-        if (user.registeredEvent !== [] && user.registeredEvent.findIndex(ev => ev == eventId) >= 0){
+        if (user.registeredEvent !== [] && user.registeredEvent.findIndex(ev => ev == eventID) >= 0){
             return res.json({message: "You already registered this event"})
         }else {
-            user.registeredEvent.push({_id: eventId})
+            user.registeredEvent.push({_id: eventID})
             user.attendance = false
             user.save()
             .then(result => {
-            EventInfos.findById({_id: eventId}).then(eventData => {
+            EventInfos.findById({_id: eventID}).then(eventData => {
                 const eventDetail = {
                     title: eventData.title,
                     description: eventData.description,
@@ -238,21 +257,21 @@ exports.registeredEvents = (req, res) => {
 
 //Delete Registered Events
 exports.unRegisteredEvents = (req, res) => {
-    const eventId = req.params.eventId
+    const eventID = req.params.eventID
     const userId = req.body.userId
 
     UserDetails.findById({_id: userId}).then(user => {
         const registeredEvents = user.registeredEvent
-        if (registeredEvents == [] && registeredEvents.findIndex(ev => ev == eventId) < 0) {
-            return res.json({message: "No Registered event"})
+        if (registeredEvents == [] && registeredEvents.findIndex(ev => ev == eventID) < 0) {
+            return res.status(400).json({message: "No Registered event"})
         }
-        if (user.registeredEvent.findIndex(ev => ev == eventId) >= 0){
+        if (user.registeredEvent.findIndex(ev => ev == eventID) >= 0){
             user.attendance = false
         }else {
             user.attendance = undefined
         }
         registeredEvents.splice(registeredEvents.findIndex(event => {
-            event === eventId
+            event === eventID
         }), 1)
         return user.save()
         .then(() => res.json({

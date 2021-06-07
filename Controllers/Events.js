@@ -4,11 +4,11 @@ const fs = require('fs')
 
 //Post Event
 exports.createEvent = (req, res) => {
-    if (!req.file) {
-        return res.json({
-            message: "Please provide the event Image!"
-        })
-    }
+    // if (!req.file) {
+    //     return res.json({
+    //         message: "Please provide the event Image!"
+    //     })
+    // }
     const eventInfo = {
         title: req.body.title,
         description: req.body.description,
@@ -23,7 +23,7 @@ exports.createEvent = (req, res) => {
             res.json(event) 
         })
         .catch(err => {
-            res.json({error: `Sorry cannot save event ${err}`})
+            res.status(403).json({error: `Sorry cannot save event ${err}`})
         })
 }
 
@@ -33,7 +33,7 @@ exports.getEvents = (req, res) => {
         res.json(events)
     })
     .catch(err => {
-        res.json({
+        res.status(403).json({
             error: `Cannot create the event due to ${err}`
         })
     })
@@ -41,24 +41,24 @@ exports.getEvents = (req, res) => {
 
 //Get Single Event via Id
 exports.getSingleEvent = (req, res) => {
-    let id = req.params.eventId
+    let id = req.params.eventID
     EventInfos.findById({_id: id})
         .then(event => {
             res.json(event)
         })
         .catch(err => {
-            res.json({msg: `Something is wrong while getting this event ${err}`})
+            res.status(403).json({msg: `Something is wrong while getting this event ${err}`})
         })
 }
 
 //Update Single event by editing it
 exports.editEvent = (req, res) => {
-    let getId = req.params.eventId
+    let getId = req.params.eventID
 
     EventInfos.findByIdAndUpdate({_id: getId},req.body)
     .then(() => res.json( {msg: "Event Edited successfully."}))
     .catch(err => {
-        res.json({
+        res.status(403).json({
             error: `We have an error while editing this event ${err}`
         })
     })
@@ -66,7 +66,7 @@ exports.editEvent = (req, res) => {
 
 //Delete an Event
 exports.deleteEvent = (req, res) => {
-    let getId = req.params.eventId
+    let getId = req.params.eventID
 
     EventInfos.findByIdAndRemove({_id: getId})
     .then (result => {
@@ -75,7 +75,7 @@ exports.deleteEvent = (req, res) => {
                 msg: "Event deleted Successfully!"
             })
         }).catch (err => {
-            res.json({
+            res.status(403).json({
                 msg: `Cannot delete this event ${err}`
             })
         })
@@ -84,5 +84,5 @@ exports.deleteEvent = (req, res) => {
 //Funcrion to delete images that their event info was deleted
 const deleteImage = (filePath) => {
     filePath = path.join(__dirname, '../', filePath)
-    fs.unlink(filePath, err => console.log(err))
+    fs.unlink(filePath).then(() => console.log("Deleted")).catch(() => console.log("Error"))
 }

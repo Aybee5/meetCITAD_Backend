@@ -32,7 +32,7 @@ exports.adminLogin = (req, res) => {
                     msg: "email or password is incorrect"
                 })
             }
-        }).catch(err => res.json(err))
+        }).catch(err => res.status(404).json(err))
 }
 
 
@@ -47,10 +47,10 @@ exports.getSuggestion = (req, res) => {
 
 //Post Registered Users of an Event
 exports.registeredUsers = (req, res) => {
-    const eventId = req.params.eventId
+    const eventID = req.params.eventID
     const userId = req.body.userId
 
-    EventInfos.findById({_id: eventId}).then(event => {
+    EventInfos.findById({_id: eventID}).then(event => {
         if (event.registeredUsers !== [] && event.registeredUsers.findIndex(x => x == userId) >= 0){
             return res.json({msg: "You already a Registered User of this event"})
         }
@@ -65,7 +65,7 @@ exports.registeredUsers = (req, res) => {
 
 //Get all Registered Users of an Event
 exports.getRegisteredUsers = (req, res) => {
-    EventInfos.findOne({_id: req.params.eventId}).select("registeredUsers title description eventImage").populate("registeredUsers", "fullname email organisation phone gender attendance")
+    EventInfos.findOne({_id: req.params.eventID}).select("registeredUsers title description eventImage").populate("registeredUsers", "fullname email organisation phone gender attendance")
         .then(event => {
             res.status(203).json(event)
         })
@@ -74,10 +74,10 @@ exports.getRegisteredUsers = (req, res) => {
 
 //Post Attended Users of an Event
 exports.attendedUsers = (req, res) => {
-    const eventId = req.params.eventId
+    const eventID = req.params.eventID
     const userId = req.body.userId
-
-    EventInfos.findById({_id: eventId}).then(event => {
+    
+    EventInfos.findById({_id: eventID}).then(event => {
         if (event.attendedUsers !== [] && event.attendedUsers.findIndex(x => x == userId) >= 0){
             return res.json({msg: "You are already an Attendee of this event"})
         }else {
@@ -92,10 +92,10 @@ exports.attendedUsers = (req, res) => {
 
 //Remove Not Attended Users
 exports.notAttendedUsers = (req, res) => {
-    const eventId = req.params.eventId
+    const eventID = req.params.eventID
     const userId = req.body.userId
 
-    EventInfos.findById({_id: eventId}).then(event => {
+    EventInfos.findById({_id: eventID}).then(event => {
         const attendedUser = event.attendedUsers
         attendedUser.splice(attendedUser.findIndex(user => {
             user === userId
@@ -109,7 +109,7 @@ exports.notAttendedUsers = (req, res) => {
 
 //Get Attended Users of an Event
 exports.getAttendedUsers = (req, res) => {
-    EventInfos.findOne({_id: req.params.eventId}).select("title attendedUsers").populate("attendedUsers", "fullname email organisation phone gender")
+    EventInfos.findOne({_id: req.params.eventID}).select("title attendedUsers").populate("attendedUsers", "fullname email organisation phone gender")
         .then(event => {
             res.status(203).json(event)
         })

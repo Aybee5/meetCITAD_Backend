@@ -13,13 +13,13 @@ router.post('/events', checkAuth, eventUpload,EventController.createEvent)
 router.get('/events', checkAuth, EventController.getEvents)
 
 //retrieve a single event via Id
-router.get('/events/:eventId', checkAuth, EventController.getSingleEvent)
+router.get('/events/:eventID', checkAuth, EventController.getSingleEvent)
 
 //Edit an event
-router.patch('/events/:eventId', checkAuth, EventController.editEvent)
+router.patch('/events/:eventID', checkAuth, EventController.editEvent)
 
 //delete an event
-router.delete('/events/:eventId', checkAuth, EventController.deleteEvent)
+router.delete('/events/:eventID', checkAuth, EventController.deleteEvent)
 
 
 module.exports = router;

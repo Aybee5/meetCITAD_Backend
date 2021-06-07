@@ -31,10 +31,10 @@ router.post('/reset-pswd', UserProfileController.resetPassword)
 router.post('/reset-pswd/:token', UserProfileController.setNewPassword)
 
 //Push Registered event to a User
-router.post('/registered-event/:eventId', checkAuth, UserProfileController.registeredEvents)
+router.post('/registered-event/:eventID', checkAuth, UserProfileController.registeredEvents)
 
 //Push UnRegistered event to a User
-router.post('/unregistered-event/:eventId', checkAuth, UserProfileController.unRegisteredEvents)
+router.post('/unregistered-event/:eventID', checkAuth, UserProfileController.unRegisteredEvents)
 
 //Get All Registered events for a User
 router.get('/registered-event', checkAuth, UserProfileController.getRegisteredEvents)

@@ -1,6 +1,6 @@
-const { EventInfos } = require("../Models/meetCITADModel")
-const path = require('path')
-const fs = require('fs')
+let { EventInfos } = require("../Models/meetCITADModel")
+let path = require('path')
+let fs = require('fs')
 
 //Post Event
 exports.createEvent = (req, res) => {
@@ -9,7 +9,7 @@ exports.createEvent = (req, res) => {
     //         message: "Please provide the event Image!"
     //     })
     // }
-    const eventInfo = {
+    let eventInfo = {
         title: req.body.title,
         description: req.body.description,
         venue: req.body.venue,
@@ -55,8 +55,8 @@ exports.getSingleEvent = (req, res) => {
 exports.editEvent = (req, res) => {
     let getId = req.params.eventID
 
-    EventInfos.findByIdAndUpdate({_id: getId},req.body)
-    .then(() => res.json( {msg: "Event Edited successfully."}))
+    EventInfos.findByIdAndUpdate({_id: getId}, req.body)
+    .then(() => res.json( {message: `Event Edited successfully.`}))
     .catch(err => {
         res.status(403).json({
             error: `We have an error while editing this event ${err}`
@@ -70,19 +70,20 @@ exports.deleteEvent = (req, res) => {
 
     EventInfos.findByIdAndRemove({_id: getId})
     .then (result => {
-            deleteImage(result.eventImage)
+        let image = result.eventImage
+           deleteImage(image)
             res.json({
                 msg: "Event deleted Successfully!"
             })
         }).catch (err => {
-            res.status(403).json({
+            res.json({
                 msg: `Cannot delete this event ${err}`
             })
         })
 }
 
-//Funcrion to delete images that their event info was deleted
-const deleteImage = (filePath) => {
-    filePath = path.join(__dirname, '../', filePath)
-    fs.unlink(filePath).then(() => console.log("Deleted")).catch(() => console.log("Error"))
+//Function to delete images that their event info was deleted
+let deleteImage = (filePath) => {
+    let FilePath = path.join(__dirname, '../', filePath)
+    fs.unlink(FilePath).then(() => console.log("Deleted")).catch(() => console.log("Error"))
 }

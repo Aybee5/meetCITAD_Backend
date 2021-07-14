@@ -1,16 +1,16 @@
 //Middleware Built in declaration
-const express = require('express')
-const mongoose = require('mongoose')
-const cors = require('cors')
+let express = require('express')
+let mongoose = require('mongoose')
+let cors = require('cors')
 require('dotenv').config()
 
 //Routes Folders injected via Index file
-const EventRoute = require('./Routes/Events')
-const AdminRoute = require('./Routes/Admin')
-const UserRoute = require('./Routes/User')
+let EventRoute = require('./Routes/Events')
+let AdminRoute = require('./Routes/Admin')
+let UserRoute = require('./Routes/User')
 
 //Middleware of the Backend
-const app = express();
+let app = express();
 app.use(express.json())
 app.use('/Uploads',express.static('Uploads'))
 app.use(express.urlencoded({ extended: true }))
@@ -50,7 +50,7 @@ app.use((req, res) => {
 });
 
 //Server Port Connection
-const PORT = process.env.PORT || 3030;
+let PORT = process.env.PORT || 3030;
 app.listen(PORT, ()=>{
   console.log("Listening to port " + PORT)
 })

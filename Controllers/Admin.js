@@ -1,6 +1,6 @@
-const { AdminSign, EventInfos, Suggestion } = require("../Models/meetCITADModel")
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
+let { AdminSign, EventInfos, Suggestion } = require("../Models/meetCITADModel")
+let bcrypt = require('bcryptjs')
+let jwt = require('jsonwebtoken')
 
 //Admin Sign In details
 exports.adminCreate = (req, res) => {
@@ -14,21 +14,25 @@ exports.adminCreate = (req, res) => {
 
 //Admin authentication Sign in
 exports.adminLogin = (req, res) => {
-    const email = req.body.email
-    const password = req.body.password
-
+    let email = req.body.email
+    let password = req.body.password
+    console.log(req.expireToken);
     AdminSign.findOne({email: email})
         .then(admin => {
-            const validPassword = bcrypt.compareSync(password, admin.password) //password encryption
-            if (validPassword){
-                const token = jwt.sign({adminInfo: admin}, process.env.JWT_KEY, {expiresIn: "1h"}) //Generating a token
+            let validPassword = bcrypt.compareSync(password, admin.password) //password encryption
+            if (validPassword && email == admin.email){
+                let token = jwt.sign(
+                    { adminInfo: admin }, 
+                    process.env.JWT_KEY, 
+                    {expiresIn: "1h"}) //Generating a token
+                    
                 return res.json({
                     message: "Authentication Successfully",
                     Admin: admin,
                     adminToken: token
                 })
             }else{
-                return res.json({
+                return res.status(404).json({
                     msg: "email or password is incorrect"
                 })
             }
@@ -42,13 +46,13 @@ exports.getSuggestion = (req, res) => {
         .then(response => {
             res.json(response)
         })
-        .catch(err => res.json({msg: `Error While getting the suggestions message ${err}`}))
+        .catch(err => res.status(404).json({msg: `Error While getting the suggestions message ${err}`}))
 }
 
 //Post Registered Users of an Event
 exports.registeredUsers = (req, res) => {
-    const eventID = req.params.eventID
-    const userId = req.body.userId
+    let eventID = req.params.eventID
+    let userId = req.body.userId
 
     EventInfos.findById({_id: eventID}).then(event => {
         if (event.registeredUsers !== [] && event.registeredUsers.findIndex(x => x == userId) >= 0){
@@ -60,22 +64,22 @@ exports.registeredUsers = (req, res) => {
             msg: "Success",
             register: event.registeredUsers
         })).catch(err => console.log(err))
-    }).catch(err => res.json({error: `${err}`}))
+    }).catch(err => res.status(404).json({error: `${err}`}))
 }
 
 //Get all Registered Users of an Event
 exports.getRegisteredUsers = (req, res) => {
     EventInfos.findOne({_id: req.params.eventID}).select("registeredUsers title description eventImage").populate("registeredUsers", "fullname email organisation phone gender attendance")
         .then(event => {
-            res.status(203).json(event)
+            res.status(200).json(event)
         })
         .catch(err => console.log('error while getting registered Users'))
 }
 
 //Post Attended Users of an Event
 exports.attendedUsers = (req, res) => {
-    const eventID = req.params.eventID
-    const userId = req.body.userId
+    let eventID = req.params.eventID
+    let userId = req.body.userId
     
     EventInfos.findById({_id: eventID}).then(event => {
         if (event.attendedUsers !== [] && event.attendedUsers.findIndex(x => x == userId) >= 0){
@@ -92,17 +96,17 @@ exports.attendedUsers = (req, res) => {
 
 //Remove Not Attended Users
 exports.notAttendedUsers = (req, res) => {
-    const eventID = req.params.eventID
-    const userId = req.body.userId
+    let eventID = req.params.eventID
+    let userId = req.body.userId
 
     EventInfos.findById({_id: eventID}).then(event => {
-        const attendedUser = event.attendedUsers
+        let attendedUser = event.attendedUsers
         attendedUser.splice(attendedUser.findIndex(user => {
             user === userId
         }), 1)
         event.save()
         .then(res.json({
-            msg: "Success"
+            message: "Success"
         }))
     }).catch(err => res.json({error: `${err}`}))
 }
@@ -111,7 +115,7 @@ exports.notAttendedUsers = (req, res) => {
 exports.getAttendedUsers = (req, res) => {
     EventInfos.findOne({_id: req.params.eventID}).select("title attendedUsers").populate("attendedUsers", "fullname email organisation phone gender")
         .then(event => {
-            res.status(203).json(event)
+            res.status(200).json(event)
         })
-        .catch(err => console.log('error while getting attende Users'))
+        .catch(err => console.log('error while getting attended Users ' + err))
 }

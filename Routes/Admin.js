@@ -1,9 +1,9 @@
-const express = require('express')
+let express = require('express')
 
-const AdminController = require('../Controllers/Admin')
-const checkAuth = require('../Middleware/Authentication')
+let AdminController = require('../Controllers/Admin')
+let checkAuth = require('../Middleware/Authentication')
 
-const router = express.Router()
+let router = express.Router()
 
 router.post('/signup', AdminController.adminCreate)
 

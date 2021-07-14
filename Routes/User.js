@@ -1,10 +1,10 @@
-const express = require('express')
+let express = require('express')
 
-const UserProfileController = require('../Controllers/User')
-const { userUpload } = require('../Storage/Storage')
-const checkAuth = require('../Middleware/Authentication')
+let UserProfileController = require('../Controllers/User')
+let { userUpload } = require('../Storage/Storage')
+let checkAuth = require('../Middleware/Authentication')
 
-const router = express.Router()
+let router = express.Router()
 
 //User AUthentication
 router.post('/login', UserProfileController.userSignin)

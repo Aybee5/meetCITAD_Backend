@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+let mongoose = require('mongoose')
+let Schema = mongoose.Schema
 
 //Events Model
 EventsSchema = Schema(
@@ -48,7 +48,7 @@ EventsSchema = Schema(
 )
 
 //Admin Model
-const AdminSignSchema = Schema(
+let AdminSignSchema = Schema(
     {
         email: {
             type: String,
@@ -66,7 +66,7 @@ const AdminSignSchema = Schema(
 )
 
 //User Model
-const UserInfoSchema = Schema(
+let UserInfoSchema = Schema(
     {
         fullname: {
             type: String,
@@ -109,20 +109,21 @@ const UserInfoSchema = Schema(
 )
 
 //User's Suggestion
-const SuggestionsSchema = Schema(
+let SuggestionsSchema = Schema(
     {
         email: String,
-        comment: String
+        comment: String,
+        date: Date
     }, 
     {
         timestamps: true
     }
 )
 
-const UserDetails =  mongoose.model("UserInformation", UserInfoSchema)
-const Suggestion = mongoose.model("Suggestion", SuggestionsSchema)
-const EventInfos = mongoose.model("Event", EventsSchema)
-const AdminSign = mongoose.model("Admininstration", AdminSignSchema)
+let UserDetails =  mongoose.model("UserInformation", UserInfoSchema)
+let Suggestion = mongoose.model("Suggestion", SuggestionsSchema)
+let EventInfos = mongoose.model("Event", EventsSchema)
+let AdminSign = mongoose.model("Admininstration", AdminSignSchema)
 
 
 module.exports = {

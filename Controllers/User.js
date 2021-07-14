@@ -1,29 +1,30 @@
-const { UserDetails, Suggestion, EventInfos } = require("../Models/meetCITADModel");
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken')
-const transporter = require("../Middleware/mailer")
+let { UserDetails, Suggestion, EventInfos } = require("../Models/meetCITADModel");
+let bcrypt = require('bcryptjs');
+let crypto = require('crypto');
+let jwt = require('jsonwebtoken')
+let transporter = require("../Middleware/mailer");
 
 //User Sign in authentication
 exports.userSignin = (req, res) => {
-    const username = req.body.username
-    const password = req.body.password
+    let username = req.body.username
+    let password = req.body.password
 
     UserDetails.findOne({username: username})
         .then(user => {
-            const validPassword = bcrypt.compareSync(password, user.password)
+            let validPassword = bcrypt.compareSync(password, user.password)
             if (user && validPassword){
-                const token = jwt.sign({user: user}, process.env.JWT_KEY, {expiresIn: "1h"})
+                let token = jwt.sign({user: user}, process.env.JWT_KEY, {expiresIn: "1h"})
+                
                 return res.json({
                     message: "Authentication Successfully",
                     User: user,
-                    userToken: token
+                    userToken: token,
                 })
             }
-            res.status(400).json({
+            res.status(401).json({
                 message: "error, wrong credentials"
             })
-            })
+        })
         .catch(err => console.log({error: err}))
 }
 
@@ -37,7 +38,7 @@ exports.createUser = (req, res) => {
                 return res.json({message: "Username already exist"})
             }
             else {
-                const userInfo = {
+                let userInfo = {
                     fullname: req.body.fullname,
                     username: req.body.username,
                     email: req.body.email,
@@ -55,7 +56,7 @@ exports.createUser = (req, res) => {
         })
     
     }else {
-      const userAttend = {
+      let userAttend = {
         username: Date.now().toString(32),
         fullname: req.body.fullname,
         email: req.body.email,
@@ -87,7 +88,7 @@ exports.usersList = (req, res) => {
 
 //Get a single User
 exports.getUser = (req, res) => {
-    const username = req.params.username
+    let username = req.params.username
     UserDetails.findOne({username})
         
         .then(user => {
@@ -97,9 +98,9 @@ exports.getUser = (req, res) => {
 
 //Update a single User
 exports.updateUser = (req, res) => {
-    const username = req.params.username
+    let username = req.params.username
 
-    const userInfoUpdate = {
+    let userInfoUpdate = {
         fullname: req.body.fullname,
         username: req.body.username,
         email: req.body.email,
@@ -120,13 +121,13 @@ exports.updateUser = (req, res) => {
 
 //Change Password
 exports.changePassword = (req, res) => {
-    const currentpassword = req.body.crtpassword
-    const newPassword = req.body.password
-    const hashPassword = bcrypt.hashSync(newPassword, 10)
+    let currentpassword = req.body.crtpassword
+    let newPassword = req.body.password
+    let hashPassword = bcrypt.hashSync(newPassword, 10) //Encrypt the new Password
 
     UserDetails.findOne({username: req.params.username})
         .then(user => {
-        const validPassword = bcrypt.compareSync(currentpassword, user.password)
+        let validPassword = bcrypt.compareSync(currentpassword, user.password)
 
         if (user && validPassword) {
             UserDetails.updateOne({username: req.params.username}, {password: hashPassword})
@@ -146,12 +147,12 @@ exports.changePassword = (req, res) => {
 
 //Post Reset Password
 exports.resetPassword = (req, res) => {
-    const email = req.body.email
+    let email = req.body.email
     crypto.randomBytes(32, (err, buffer) => {
         if (err) {
             return console.log(err)
         }
-        const token = buffer.toString('hex')
+        let token = buffer.toString('hex')
         UserDetails.findOne({email: email}).then(user => {
             if (!user) {
                 return res.json({message: "No User with such email."})
@@ -186,12 +187,12 @@ exports.resetPassword = (req, res) => {
 
 //Post New Password
 exports.setNewPassword = (req, res) => {
-    const passwordToken = req.params.token
+    let passwordToken = req.params.token
     UserDetails.findOne({resetToken: passwordToken, resetTokenExpiration: {$gt: Date.now()}}).then(resetUser => {
         if (!resetUser) {
             console.log("Cannot find this user")
         }
-        const newPassword = req.body.password
+        let newPassword = req.body.password
         let hashPassword = bcrypt.hashSync(newPassword, 10)
 
         resetUser.password = hashPassword
@@ -211,8 +212,8 @@ exports.setNewPassword = (req, res) => {
 
 //Post Registered Events
 exports.registeredEvents = (req, res) => {
-    const eventID = req.params.eventID
-    const userId = req.body.userId
+    let eventID = req.params.eventID
+    let userId = req.body.userId
     
     UserDetails.findById({_id: userId}).then(user => {
         let email = user.email
@@ -226,7 +227,7 @@ exports.registeredEvents = (req, res) => {
             user.save()
             .then(result => {
             EventInfos.findById({_id: eventID}).then(eventData => {
-                const eventDetail = {
+                let eventDetail = {
                     title: eventData.title,
                     description: eventData.description,
                     location: eventData.venue,
@@ -255,13 +256,13 @@ exports.registeredEvents = (req, res) => {
     }).catch(err => res.json({error: `${err}`}))
 }
 
-//Delete Registered Events
+//UnRegistered Events
 exports.unRegisteredEvents = (req, res) => {
-    const eventID = req.params.eventID
-    const userId = req.body.userId
+    let eventID = req.params.eventID
+    let userId = req.body.userId
 
     UserDetails.findById({_id: userId}).then(user => {
-        const registeredEvents = user.registeredEvent
+        let registeredEvents = user.registeredEvent
         if (registeredEvents == [] && registeredEvents.findIndex(ev => ev == eventID) < 0) {
             return res.status(400).json({message: "No Registered event"})
         }
@@ -299,9 +300,10 @@ exports.createSuggestion = (req, res) => {
     UserDetails.findOne({_id: req.body.userId})
     .then(user => {
         if(user){
-            const suggestions = {
+            let suggestions = {
                 email: req.body.email,
-                comment: req.body.comment
+                comment: req.body.comment,
+                date: new Date()
             }
 
             Suggestion.create(suggestions)

@@ -1,10 +1,10 @@
-const express = require('express');
+let express = require('express');
 
-const { eventUpload } = require('../Storage/Storage')
-const EventController = require('../Controllers/Events')
-const checkAuth = require('../Middleware/Authentication')
+let { eventUpload } = require('../Storage/Storage')
+let EventController = require('../Controllers/Events')
+let checkAuth = require('../Middleware/Authentication')
 
-const router = express.Router()
+let router = express.Router()
 
 //create an event
 router.post('/events', checkAuth, eventUpload,EventController.createEvent)

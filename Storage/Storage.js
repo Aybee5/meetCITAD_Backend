@@ -1,7 +1,7 @@
-const multer = require('multer');
-const path = require('path')
+let multer = require('multer');
+let path = require('path')
  
-const storageEvent = multer.diskStorage({
+let storageEvent = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, './Uploads/Events/');
     },
@@ -10,7 +10,7 @@ const storageEvent = multer.diskStorage({
     }
 })
  
-const storageUser = multer.diskStorage({
+let storageUser = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, './Uploads/ProfilePictures/')
     },
@@ -19,7 +19,7 @@ const storageUser = multer.diskStorage({
     }
 })
 
-const fileFilter = (req, file,cb) => {
+let fileFilter = (req, file,cb) => {
     if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
         cb(null, true)
     }else {
@@ -27,9 +27,9 @@ const fileFilter = (req, file,cb) => {
     }
 }
 
-const eventUpload = multer({ storage: storageEvent, fileFilter: fileFilter }).single('eventImage')
+let eventUpload = multer({ storage: storageEvent, fileFilter: fileFilter }).single('eventImage')
 
-const userUpload = multer({ storage: storageUser, fileFilter: fileFilter }).single('profileImage')
+let userUpload = multer({ storage: storageUser, fileFilter: fileFilter }).single('profileImage')
 
 module.exports  = {
     eventUpload,

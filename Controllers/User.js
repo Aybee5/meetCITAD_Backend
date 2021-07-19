@@ -12,20 +12,26 @@ exports.userSignin = (req, res) => {
     UserDetails.findOne({username: username})
         .then(user => {
             let validPassword = bcrypt.compareSync(password, user.password)
+
             if (user && validPassword){
                 let token = jwt.sign({user: user}, process.env.JWT_KEY, {expiresIn: "1h"})
                 
-                return res.json({
-                    message: "Authentication Successfully",
+                return res.status(200).json({
+                    message: "SignIn Successfully",
                     User: user,
                     userToken: token,
+                    login: true
+                })
+            } else {
+                res.status(409).json({
+                    error: "Username or Password is incorrect"
                 })
             }
-            res.status(401).json({
-                message: "error, wrong credentials"
-            })
+            
         })
-        .catch(err => console.log({error: err}))
+        .catch(() => res.status(500).json({
+            message: "Username does't exist. Please check and comfirm it!!!"
+        }))
 }
 
 //Create user
@@ -35,7 +41,7 @@ exports.createUser = (req, res) => {
       UserDetails.findOne({username: username})
         .then(user => {
             if (user && username === user.username) {
-                return res.json({message: "Username already exist"})
+                return res.status(409).json({error: "Username already exist"})
             }
             else {
                 let userInfo = {
@@ -47,11 +53,10 @@ exports.createUser = (req, res) => {
                     gender: req.body.gender
                 }
                 UserDetails.create(userInfo)
-                    
                     .then(result => {
-                        res.status(201).json({result})
+                        res.status(201).json({result, message: "User created Successfully"})
                     })
-                    .catch(error => res.status(202).json({message: `Data not created ${error}`}))
+                    .catch(error => res.status(500).json({error: `Cannot Save User`}))
             }
         })
     
@@ -66,9 +71,9 @@ exports.createUser = (req, res) => {
       }
         UserDetails.create(userAttend)
         .then(result => {
-            res.status(201).json(result);
+            res.status(201).json({result, message: "User created Successfully"})
         })
-        .catch(error => res.status(202).json({message: `Data not created ${error}`}))
+        .catch(error => res.status(500).json({error: `Cannot Save User`}))
     }
   }
           
@@ -77,12 +82,12 @@ exports.createUser = (req, res) => {
 exports.usersList = (req, res) => {
     UserDetails.find()
         .then(users => {
-            res.json({
+            res.status(200).json({
                 Users: users
             })
         })
-        .catch(err => res.json({
-            error: err
+        .catch(err => res.status(500).json({
+            error: "Error while getting Users"
         }))
 }
 
@@ -92,62 +97,82 @@ exports.getUser = (req, res) => {
     UserDetails.findOne({username})
         
         .then(user => {
-            res.json(user)
-        }).catch(err => res.json({message: "Cannot find the user"}))
+            res.status(200).json({
+                User: user
+            })
+        }).catch(err => res.status(500).json({error: "Cannot find the user"}))
 }
 
 //Update a single User
 exports.updateUser = (req, res) => {
     let username = req.params.username
-
-    let userInfoUpdate = {
-        fullname: req.body.fullname,
-        username: req.body.username,
-        email: req.body.email,
-        address: req.body.address,
-        phone: req.body.phone,
-        organisation: req.body.organisation,
-        biography: req.body.biography,
-        gender: req.body.gender,
-        profileImage: req.file.path
+    let userInfoUpdate;
+    
+    if(!req.file) {
+       userInfoUpdate = {
+            fullname: req.body.fullname,
+            username: req.body.username,
+            email: req.body.email,
+            address: req.body.address,
+            phone: req.body.telephone,
+            organisation: req.body.organisation,
+            biography: req.body.biography,
+            gender: req.body.gender,
+            profileImage: ''
+        }
+    }        
+    else if(req.file){
+       userInfoUpdate = {
+            fullname: req.body.fullname,
+            username: req.body.username,
+            email: req.body.email,
+            address: req.body.address,
+            phone: req.body.phone,
+            organisation: req.body.organisation,
+            biography: req.body.biography,
+            gender: req.body.gender,
+            profileImage: req.file.path
+        }     
     }
-    UserDetails.findOneAndUpdate({username: username}, userInfoUpdate, {new: true})
-        .then(updatedinfo => {
-            res.json(updatedinfo)
+    
+    UserDetails.findOneAndUpdate({username: username}, userInfoUpdate, { new: true })
+        .then((updatedInfo) => {
+            res.status(201).json({updatedInfo, message: "Event Updated Successfully"})       
         })
-        .catch(error => console.log(`Can't update the record ${error}`)
+        .catch(error => res.status(500).json({error: `Cannot update the record`})
         )
 }
 
 //Change Password
 exports.changePassword = (req, res) => {
-    let currentpassword = req.body.crtpassword
-    let newPassword = req.body.password
+    let currentPassword = req.body.password
+    let newPassword = req.body.newPassword
     let hashPassword = bcrypt.hashSync(newPassword, 10) //Encrypt the new Password
 
     UserDetails.findOne({username: req.params.username})
         .then(user => {
-        let validPassword = bcrypt.compareSync(currentpassword, user.password)
+        let validPassword = bcrypt.compareSync(currentPassword, user.password)
 
         if (user && validPassword) {
             UserDetails.updateOne({username: req.params.username}, {password: hashPassword})
                 
                 .then(result => {
-                    res.json({message: "Password successfully changed"})
-                }).catch(err => res.json({message: `${err}`}))
+                    res.status(201).json({message: "Password successfully changed"})
+                }).catch(err => res.status(500).json({error: "Cannot change password"}))
             }
         else {
-            return res.json({message: "Please check the current password"})
+            return res.status(409).json({error: "Please check the current password"})
         }
     })
     .catch(err=>{
-        res.status(500).json({error: `${err}`})
+        res.status(500).json({error: "Cannot find the User"})
     })
 }
 
 //Post Reset Password
 exports.resetPassword = (req, res) => {
     let email = req.body.email
+    
     crypto.randomBytes(32, (err, buffer) => {
         if (err) {
             return console.log(err)
@@ -155,32 +180,38 @@ exports.resetPassword = (req, res) => {
         let token = buffer.toString('hex')
         UserDetails.findOne({email: email}).then(user => {
             if (!user) {
-                return res.json({message: "No User with such email."})
+                return res.status(404).json({error: "No User with such email."})
             }
             user.resetToken = token
             user.resetTokenExpiration = Date.now() + 3600000
             return user.save()
         })
         .then(response => {
-            // transporter.sendMail({
-            //     to: email,
-            //     from: "citadorganisation@citad.org",
-            //     subject: "Password Reset",
-            //     html: `
-            //         <div style="align: center">
-            //             <h3>Reset your password?</h3>
-            //             <p>If you requested a password reset, use the link below to complete the process. 
-            //             If you didn't make this request, ignore this email.</p>
-            //             <p> <a href="http://localhost:8080/reset-password/${token}"> Set new Password </a> </p>
+            transporter.sendMail({
+                to: email,
+                from: process.env.USERNAME,
+                subject: "Password Reset",
+                html: `
+                    <div style="align: center">
+                        <h3>Reset your password?</h3>
+                        <p>If you requested a password reset, use the link below to complete the process. 
+                        If you didn't make this request, ignore this email.</p>
+                        <p> <a href="http://localhost:8080/reset-password/${token}"> Set new Password </a> </p>
 
-            //             <p> <center>Thank you!!!</center> </p>
-            //         </div>
-            //     `
-            // })
-            console.log(response)
+                        <p> <center>Thank you!!!</center> </p>
+                    </div>
+                `
+            }, (err, res) => {
+                if(err) {
+                    console.log({error: "Email not Send", err})
+                }else {
+                    console.log({message: "Email send Successfully"});
+                }
+            })
+            console.log(response);
         })
         .catch(err => {
-            res.json({message: err})
+            res.status(500).json({error: err})
         })
     })
 }
@@ -188,9 +219,10 @@ exports.resetPassword = (req, res) => {
 //Post New Password
 exports.setNewPassword = (req, res) => {
     let passwordToken = req.params.token
-    UserDetails.findOne({resetToken: passwordToken, resetTokenExpiration: {$gt: Date.now()}}).then(resetUser => {
+    UserDetails.findOne({resetToken: passwordToken, resetTokenExpiration: {$gt: Date.now()}})
+    .then(resetUser => {
         if (!resetUser) {
-            console.log("Cannot find this user")
+            res.status(404).json({error: "Cannot find this user"})
         }
         let newPassword = req.body.password
         let hashPassword = bcrypt.hashSync(newPassword, 10)
@@ -199,14 +231,13 @@ exports.setNewPassword = (req, res) => {
         resetUser.resetToken = undefined
         resetUser.resetTokenExpiration = undefined
 
-        console.log(resetUser);
         return resetUser.save()
     })
     .then(res => {
-        res.json({respons: res})
+        res.status(201).json({respons: res, message: "Password Changed"})
     })
     .catch(err => {
-        res.json({error: err})
+        res.status(500).json({error: "Error while resetting password"})
     })
 }
 
@@ -220,7 +251,7 @@ exports.registeredEvents = (req, res) => {
 
         //Check whether there is registered event of user
         if (user.registeredEvent !== [] && user.registeredEvent.findIndex(ev => ev == eventID) >= 0){
-            return res.json({message: "You already registered this event"})
+            return res.status(409).json({error: "You already registered this event"})
         }else {
             user.registeredEvent.push({_id: eventID})
             user.attendance = false
@@ -234,26 +265,31 @@ exports.registeredEvents = (req, res) => {
                     date: eventData.date.toDateString()
                 }
                 //Sending Sucessful registration to user email
-                // transporter.sendMail({
-                //     to: email,
-                //     from: "citadorganisation@citad.org",
-                //     subject: "Registration Status",
-                //     html: `
-                //         <h3>You Successfully Registered for CITAD's Event </h3>
-                //         <p>Which is ${eventDetail.title}: ${eventDetail.description} that will
-                //             take place at ${eventDetail.location} on ${eventDetail.date.toString()}
-                //         </p>
+                transporter.sendMail({
+                    to: email,
+                    from: process.env.USERNAME,
+                    subject: "Registration Status",
+                    html: `
+                        <h3>You Successfully Registered for CITAD's Event </h3>
+                        <p>Which is ${eventDetail.title}: ${eventDetail.description} that will
+                            take place at ${eventDetail.location} on ${eventDetail.date.toString()}
+                        </p>
 
-                //         <p>Thank You, We really appreciated and your attendance really matters.</p>
-                //     `
-                // })
-                res.json({eventDetail, email})
+                        <p>Thank You, We really appreciated and your attendance really matters.</p>
+                    `
+                }, (err, res) => {
+                    if(err) {
+                        console.log({error: "Email not Send"})
+                    }else {
+                        console.log({message: "Email send Successfully"});
+                    }
+                })
                 }).catch(err => {
-                    console.log(err);
+                    res.status(500).json(() => {error: "Cannot find the event"})
                 })
             })
         }
-    }).catch(err => res.json({error: `${err}`}))
+    }).catch(err => res.status(500).json({error: "No such User with this Id"}))
 }
 
 //UnRegistered Events
@@ -264,7 +300,7 @@ exports.unRegisteredEvents = (req, res) => {
     UserDetails.findById({_id: userId}).then(user => {
         let registeredEvents = user.registeredEvent
         if (registeredEvents == [] && registeredEvents.findIndex(ev => ev == eventID) < 0) {
-            return res.status(400).json({message: "No Registered event"})
+            return res.status(409).json({error: "No Registered event"})
         }
         if (user.registeredEvent.findIndex(ev => ev == eventID) >= 0){
             user.attendance = false
@@ -275,23 +311,24 @@ exports.unRegisteredEvents = (req, res) => {
             event === eventID
         }), 1)
         return user.save()
-        .then(() => res.json({
+        .then(() => res.status(201).json({
             message: "Successfully Unregistered"
         })).catch(err => {
-            res.json({message: err})
+            res.status(409).json({error: "Cannot Unregister the event"})
         })
-    }).catch(err => res.json({error: err}))
+    }).catch(err => res.status(500).json({error: "No such User with this Id"}))
 }
 
 //Get Registered Events
 exports.getRegisteredEvents = (req, res) => {
+    
     UserDetails.findOne({_id: req.query.userId})
     .select("registeredEvent")
     .populate("registeredEvent", "title description venue time")    
         .then(user => {
-            res.status(203).json(user)
+            res.status(200).json(user)
         })
-        .catch(err => res.json(`error while getting registered event ${err}`))
+        .catch(err => res.status(500).json({error: `error while getting registered event`}))
 }
 
 
@@ -307,29 +344,28 @@ exports.createSuggestion = (req, res) => {
             }
 
             Suggestion.create(suggestions)
-            
             .then(resultmessage => {
-                res.json(resultmessage),
-                user.suggestionmessage.push(resultmessage)
+                user.suggestionMessage.push(resultmessage)
                 user.save()
+                res.status(201).json({message: "Suggestions sent"})
             })
-            .catch(err => res.json(`Cannot create ${err}`))
+            .catch(err => res.status(409).json({error: `Cannot send Suggestion`}))
         }
         else {
-            res.json({message: "No User with such id here"})
+            res.status(500).json({error: "No User with such id here"})
         }
-    }).catch(err => console.error(err))
+    }).catch(err => res.status(500).json({erro: "Cannot find the User"}))
     
 }
 
 //Get Suggestion Message
 exports.getSuggestion = (req, res) => {
-    UserDetails.findOne({_id: req.query.userId}).populate("suggestionMessage")
-    .then(user => {
-        res.json({
-            suggestion: user.suggestionMessage
-        })
+    
+    UserDetails.findOne({_id: req.query.userId}).select('suggestionMessage').populate("suggestionMessage")
+    .then(suggestion => {
+        res.status(200).json(suggestion)
     })
-    .catch(err => console.log('error while getting sent messages'))
+    .catch(err => res.status(500).json({error: 'error while getting sent messages'}))
 }
+
 

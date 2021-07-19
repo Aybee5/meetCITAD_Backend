@@ -15,7 +15,7 @@ let storageUser = multer.diskStorage({
         cb(null, './Uploads/ProfilePictures/')
     },
     filename: (req, file, cb) => {
-        cb(null, req.body.username + path.extname(file.originalname));
+        cb(null, `profileImage-${new Date().toISOString()}` + path.extname(file.originalname));
     }
 })
 
@@ -34,4 +34,4 @@ let userUpload = multer({ storage: storageUser, fileFilter: fileFilter }).single
 module.exports  = {
     eventUpload,
     userUpload
-};
+}

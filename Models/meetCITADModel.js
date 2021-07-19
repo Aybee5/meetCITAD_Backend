@@ -32,6 +32,10 @@ EventsSchema = Schema(
             type: String,
             required: true
         },
+        availableSeat: {
+            type: Number,
+            required: true
+        },
         registeredUsers: [{
             type: Schema.Types.ObjectId,
             ref: 'UserInformation'
@@ -88,7 +92,7 @@ let UserInfoSchema = Schema(
         phone: String,
         organisation: String,
         biography: String,
-        profileImg: String,
+        profileImage: String,
         gender: String,
         attendance: Boolean,
         registeredEvent: [{

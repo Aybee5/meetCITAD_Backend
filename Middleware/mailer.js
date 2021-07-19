@@ -1,10 +1,14 @@
 let nodemailer = require('nodemailer')
-let sendGrid = require('nodemailer-sendgrid-transport')
 
-// let transporter = nodemailer.createTransport(sendGrid({
-//     auth: {
-//         api_key: ''
-//     }
-// }))
+let transporter = nodemailer.createTransport({
+    // host: 'smtp.gmail.com',
+    // port: 465,
+    // secure: true,
+    service: 'gmail',
+    auth: {
+        user: process.env.USERNAME,
+        pass: process.env.PASSWORD
+    }
+})
 
-//module.exports = transporter
+module.exports = transporter

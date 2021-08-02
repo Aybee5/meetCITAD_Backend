@@ -6,6 +6,7 @@ let storageEvent = multer.diskStorage({
         cb(null, './Uploads/Events/');
     },
     filename: (req, file, cb) => {
+        console.log(req.body);
         cb(null, `eventImage-${new Date().toISOString()}` + path.extname(file.originalname));
     }
 })
@@ -15,6 +16,7 @@ let storageUser = multer.diskStorage({
         cb(null, './Uploads/ProfilePictures/')
     },
     filename: (req, file, cb) => {
+        console.log(req.body);
         cb(null, `profileImage-${new Date().toISOString()}` + path.extname(file.originalname));
     }
 })

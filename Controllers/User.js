@@ -30,7 +30,7 @@ exports.userSignin = (req, res) => {
             
         })
         .catch(() => res.status(500).json({
-            message: "Username does't exist. Please check and comfirm it!!!"
+            error: "Username does't exist. Please check and comfirm it!!!"
         }))
 }
 
@@ -48,6 +48,7 @@ exports.createUser = (req, res) => {
                     fullname: req.body.fullname,
                     username: req.body.username,
                     email: req.body.email,
+                    phone: req.body.phone,
                     organisation: req.body.organisation,
                     password: bcrypt.hashSync(req.body.password, 10),
                     gender: req.body.gender
@@ -127,7 +128,7 @@ exports.updateUser = (req, res) => {
             username: req.body.username,
             email: req.body.email,
             address: req.body.address,
-            phone: req.body.phone,
+            phone: req.body.telephone,
             organisation: req.body.organisation,
             biography: req.body.biography,
             gender: req.body.gender,
@@ -189,7 +190,7 @@ exports.resetPassword = (req, res) => {
         .then(response => {
             transporter.sendMail({
                 to: email,
-                from: process.env.USERNAME,
+                from: process.env.USER_NAME,
                 subject: "Password Reset",
                 html: `
                     <div style="align: center">
@@ -201,14 +202,13 @@ exports.resetPassword = (req, res) => {
                         <p> <center>Thank you!!!</center> </p>
                     </div>
                 `
-            }, (err, res) => {
+            }, (err, cb) => {
                 if(err) {
-                    console.log({error: "Email not Send", err})
+                    res.status(500).json({error: "Email not Send"})
                 }else {
-                    console.log({message: "Email send Successfully"});
+                    res.status(201).json({message: "Email send Successfully"});
                 }
             })
-            console.log(response);
         })
         .catch(err => {
             res.status(500).json({error: err})
@@ -267,7 +267,7 @@ exports.registeredEvents = (req, res) => {
                 //Sending Sucessful registration to user email
                 transporter.sendMail({
                     to: email,
-                    from: process.env.USERNAME,
+                    from: process.env.USER_NAME,
                     subject: "Registration Status",
                     html: `
                         <h3>You Successfully Registered for CITAD's Event </h3>
@@ -277,15 +277,17 @@ exports.registeredEvents = (req, res) => {
 
                         <p>Thank You, We really appreciated and your attendance really matters.</p>
                     `
-                }, (err, res) => {
+                }, (err, cb) => {
                     if(err) {
-                        console.log({error: "Email not Send"})
+                        res.status(500).json({error: "Email not Send"})
+                        //console.log(err);
                     }else {
-                        console.log({message: "Email send Successfully"});
+                        res.status(201).json({message: "Email send Successfully"});
+                        //console.log(cb);
                     }
                 })
                 }).catch(err => {
-                    res.status(500).json(() => {error: "Cannot find the event"})
+                    res.status(500).json(() => {error: "Cannot find the event"}, err)
                 })
             })
         }
@@ -324,7 +326,7 @@ exports.getRegisteredEvents = (req, res) => {
     
     UserDetails.findOne({_id: req.query.userId})
     .select("registeredEvent")
-    .populate("registeredEvent", "title description venue time")    
+    .populate("registeredEvent", "title description venue date")    
         .then(user => {
             res.status(200).json(user)
         })

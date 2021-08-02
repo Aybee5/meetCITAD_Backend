@@ -16,7 +16,7 @@ exports.createEvent = (req, res) => {
         hostBy: req.body.hostBy,
         date: req.body.date,
         time: req.body.time,
-        availableSeat: req.body.seat,
+        availableSeat: req.body.availableSeat,
         eventImage: req.file.path
     }
     EventInfos.create(eventInfo)
@@ -58,9 +58,11 @@ exports.getSingleEvent = (req, res) => {
 //Update Single event by editing it
 exports.editEvent = (req, res) => {
     let getId = req.params.eventID
-
+   
     EventInfos.findByIdAndUpdate({_id: getId}, req.body, {new: true})
-    .then(() => res.status(201).json( {message: `Event Edited successfully.`}))
+    .then(() => res.status(201).json( {
+        message: `Event Edited successfully.`
+    }))
     .catch(err => {
         res.status(500).json({
             error: `We have an error while editing this event`
@@ -75,24 +77,23 @@ exports.deleteEvent = (req, res) => {
     EventInfos.findByIdAndRemove({_id: getId})
     .then (result => {
         let image = result.eventImage
-           deleteImage(image)
-            res.status(201).json({
-                message: "Event deleted Successfully!"
-            })
-        }).catch (err => {
-            res.status(500).json({
-                error: `Cannot delete this event ${err}`
-            })
+        deleteImage(image)
+        res.status(201).json({
+            message: "Event deleted Successfully!"
         })
-    .catch(() => {
-        error: "Cannot the event to delete"
+        })
+    .catch (err => {
+        res.status(500).json({
+            error: `Cannot delete this event ${err}`
+        })
     })
 }
 
 //Function to delete images that their event info was deleted
 let deleteImage = (filePath) => {
-    let FilePath = path.join(__dirname, '../', filePath)
-    fs.unlink(FilePath)
-        .then(() => console.log("Deleted"))
-        .catch(() => console.log("Error"))
+    fs.unlink(filePath, (err) => {
+        if (err) {
+            throw (err)
+        }
+    })
 }

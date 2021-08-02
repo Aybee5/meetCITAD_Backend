@@ -1,6 +1,7 @@
-let { AdminSign, EventInfos, Suggestion } = require("../Models/meetCITADModel")
+let { AdminSign, EventInfos, Suggestion, UserDetails } = require("../Models/meetCITADModel")
 let bcrypt = require('bcryptjs')
 let jwt = require('jsonwebtoken')
+let transporter = require('../Middleware/mailer')
 
 //Admin Sign In details
 exports.adminCreate = (req, res) => {
@@ -35,10 +36,10 @@ exports.adminLogin = (req, res) => {
                 })
             }else{
                 return res.status(409).json({
-                    error: "email or password is incorrect"
+                    error: "Email or Password is incorrect"
                 })
             }
-        }).catch(err => res.status(500).json({error: "User email doest not exist"}))
+        }).catch(err => res.status(500).json({error: "Invalid Response, please try again!!!"}))
 }
 
 
@@ -58,7 +59,7 @@ exports.registeredUsers = (req, res) => {
 
     EventInfos.findById({_id: eventID}).then(event => {
         if (event.registeredUsers !== [] && event.registeredUsers.findIndex(x => x == userId) >= 0){
-            return res.status(409).json({msg: "You already a Registered User of this event"})
+            return res.status(409).json({msg: "You are already a Registered User of this event"})
         }
         if (event.registeredUsers.length >= 0 && event.registeredUsers.length < event.availableSeat ) {
             event.registeredUsers.push({_id: userId})
@@ -68,7 +69,7 @@ exports.registeredUsers = (req, res) => {
                 register: event.registeredUsers
             })).catch(err => res.status(500).json({error: "Cannot Registered the User"}))            
         }else {
-            res.status(409).json("Sorry, No more Available seat for this Events")
+            res.status(409).json({error: "Sorry, No more Available seat for this Events"})
         }
 
     }).catch(err => res.status(500).json({error: "Cannot find this event"}))
@@ -113,6 +114,11 @@ exports.attendedUsers = (req, res) => {
         }else {
             event.attendedUsers.push(userId)
             event.save()
+            UserDetails.findById({_id: userId})
+                .then(user => {
+                    user.attendance = true
+                    user.save()
+                })
             res.status(201).json({
                 message: "Attendee added Successfully",
                 attend: event.attendedUsers
@@ -132,6 +138,11 @@ exports.notAttendedUsers = (req, res) => {
             user === userId
         }), 1)
         event.save()
+        UserDetails.findById({_id: userId})
+            .then(user => {
+                user.attendance = false
+                user.save()
+            })
         .then(res.status(201).json({
             message: "Attendee removed Successfully"
         }))
@@ -149,7 +160,7 @@ exports.getAttendedUsers = (req, res) => {
 
 //Send Reminders
 exports.sendReminders = (req, res) => {
-    EventInfos.findById({_id: req.params.eventID})
+    EventInfos.findOne({_id: req.params.eventID})
         .select('title description venue date time registeredUsers')
         .populate('registeredUsers', 'email')
         .then(eventData => {
@@ -162,11 +173,12 @@ exports.sendReminders = (req, res) => {
             }
             let userMail = eventData.registeredUsers
             let mails = userMail.map(ele => ele.email)
-            
+            mails.toString()
+
             // Sending Reminder to the users email
-            transporter.sendMail({
+           return transporter.sendMail({
                 to: mails,
-                from: process.env.USERNAME,
+                from: process.env.USER_NAME,
                 subject: "Reminder",
                 html: `
                     <h3>REMINDER for CITAD's Event </h3>
@@ -176,26 +188,28 @@ exports.sendReminders = (req, res) => {
 
                     <p>Thank You, We really appreciate and your attendance really matters.</p>
                 `
-            }, (err, cb) => {
+            },(err, cb) => {
                 if(err) {
-                    console.log({error: "Email not Send"})
+                    res.status(500).json({error: "Email not Send"})
+                    //console.log(err);
                 }else {
-                    console.log({message: "Email send Successfully"});
+                    res.status(201).json({message: "Email send Successfully"});
+                    //console.log(cb);
                 }
             })
         })
         .catch(error => {
-            res.status(500).json({ error: "Cannot find this event" })
+            res.status(500).json({ error: "Cannot find this event", error })
         })
 }
 
 exports.replySuggestions = (req, res) => {
     let mailto = req.body.email
     let message = req.body.reply
-
+    
     transporter.sendMail({
         to: mailto,
-        from: process.env.USERNAME,
+        from: process.env.USER_NAME,
         subject: "Reply",
         html: `
             <h3>meetCITAD</h3>
@@ -205,9 +219,11 @@ exports.replySuggestions = (req, res) => {
         `
     }, (err, cb) => {
         if(err) {
-            console.log({error: "Email not Send"})
+            res.status(500).json({error: "Email not Send"})
+            //console.log(err);
         }else {
-            console.log({message: "Email send Successfully"});
+            res.status(201).json({message: "Email send Successfully"});
+            //console.log(cb);
         }
     })
 }

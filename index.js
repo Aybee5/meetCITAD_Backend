@@ -30,7 +30,7 @@ app.use('/user', UserRoute)
 app.use('/admin', AdminRoute)
 
 //Connecting to MongoDataBase
-mongoose.connect("mongodb://localhost:27017/meetCITAD", {
+mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false

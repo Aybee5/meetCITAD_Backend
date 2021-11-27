@@ -174,28 +174,34 @@ exports.sendReminders = (req, res) => {
             let userMail = eventData.registeredUsers
             let mails = userMail.map(ele => ele.email)
             mails.toString()
-
+            let myMail = []
+            for (let m = 0; m < mails.length; m++) {
+                myMail.push({"Email": mails[m]})
+            }
             // Sending Reminder to the users email
-           return transporter.sendMail({
-                to: mails,
-                from: process.env.USER_NAME,
-                subject: "Reminder",
-                html: `
-                    <h3>REMINDER for CITAD's Event </h3>
-                    <p>The event you registered recently with the details of ${eventDetail.title}: ${eventDetail.description} will
-                        eventually take place at ${eventDetail.location} on ${eventDetail.date.toString()}
-                    </p>
-
-                    <p>Thank You, We really appreciate and your attendance really matters.</p>
-                `
-            },(err, cb) => {
-                if(err) {
-                    res.status(500).json({error: "Email not Send"})
-                    //console.log(err);
-                }else {
-                    res.status(201).json({message: "Email send Successfully"});
-                    //console.log(cb);
-                }
+           return transporter.request({
+                "Messages":[{
+                    "From": {
+                        "Email": process.env.USER_NAME,
+                        "Name": "meetCITAD"
+                    },
+                    "To": myMail,
+                    "Subject": "Reminder",
+                    "HTMLPart": ` <h3>REMINDER for CITAD's Event </h3>
+                                <p>The event you registered recently with the details of ${eventDetail.title}: ${eventDetail.description} will
+                                    eventually take place at ${eventDetail.location} on ${eventDetail.date.toString()}
+                                </p>
+            
+                                <p>Thank You, We really appreciate and your attendance really matters.</p> `
+                }]
+                },(err, cb) => {
+                    if(err) {
+                        res.status(500).json({error: "Email not Send"})
+                        //console.log("error\n" + err);
+                    }else {
+                        res.status(201).json({message: "Email send Successfully"});
+                        //console.log(cb.body);
+                    }
             })
         })
         .catch(error => {
@@ -206,6 +212,9 @@ exports.sendReminders = (req, res) => {
 exports.replySuggestions = (req, res) => {
     let mailto = req.body.email
     let message = req.body.reply
+    if(mailto == '' || message == '') {
+        return res.status(409).json({error: `Please all the field must be filled out`})
+    }
     
     transporter.sendMail({
         to: mailto,

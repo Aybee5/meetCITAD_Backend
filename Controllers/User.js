@@ -37,11 +37,12 @@ exports.userSignin = (req, res) => {
 //Create user
 exports.createUser = (req, res) => {
     let username = req.body.username
+    let mail = req.body.email
     if (username) {
-      UserDetails.findOne({username: username})
+      UserDetails.find({$or: [{ username: username }, { email: mail }]})
         .then(user => {
-            if (user && username === user.username) {
-                return res.status(409).json({error: "Username already exist"})
+            if (user && username === user.username || user.email === mail) {
+                return res.status(409).json({error: "Username or Email already taken"})
             }
             else {
                 let userInfo = {
@@ -188,20 +189,27 @@ exports.resetPassword = (req, res) => {
             return user.save()
         })
         .then(response => {
-            transporter.sendMail({
-                to: email,
-                from: process.env.USER_NAME,
-                subject: "Password Reset",
-                html: `
-                    <div style="align: center">
-                        <h3>Reset your password?</h3>
-                        <p>If you requested a password reset, use the link below to complete the process. 
-                        If you didn't make this request, ignore this email.</p>
-                        <p> <a href="http://localhost:8080/reset-password/${token}"> Set new Password </a> </p>
-
-                        <p> <center>Thank you!!!</center> </p>
-                    </div>
-                `
+            transporter.request({
+                "Messages":[{
+                    "From": {
+                        "Email": process.env.USER_NAME,
+                        "Name": "meetCITAD"
+                    },
+                    "To": [{
+                        "Email": email
+                    }],
+                    "Subject": "Password Reset",
+                    "HTMLPart": `
+                        <div style="align: center">
+                            <h3>Reset your password?</h3>
+                            <p>If you requested a password reset, use the link below to complete the process. 
+                            If you didn't make this request, ignore this email.</p>
+                            <p> <a href="http://localhost:8080/reset-password/${token}"> Set new Password </a> </p>
+    
+                            <p> <center>Thank you!!!</center> </p>
+                        </div>
+                    `
+                }]
             }, (err, cb) => {
                 if(err) {
                     res.status(500).json({error: "Email not Send"})
@@ -265,18 +273,25 @@ exports.registeredEvents = (req, res) => {
                     date: eventData.date.toDateString()
                 }
                 //Sending Sucessful registration to user email
-                transporter.sendMail({
-                    to: email,
-                    from: process.env.USER_NAME,
-                    subject: "Registration Status",
-                    html: `
-                        <h3>You Successfully Registered for CITAD's Event </h3>
-                        <p>Which is ${eventDetail.title}: ${eventDetail.description} that will
-                            take place at ${eventDetail.location} on ${eventDetail.date.toString()}
-                        </p>
-
-                        <p>Thank You, We really appreciated and your attendance really matters.</p>
-                    `
+                transporter.request({
+                    "Messages":[{
+                        "From": {
+                            "Email": process.env.USER_NAME,
+                            "Name": "meetCITAD"
+                        },
+                        "To": [{
+                            "Email": email
+                        }],
+                        "Subject": "Registration Status",
+                        "HTMLPart": `
+                            <h3>You Successfully Registered for CITAD's Event </h3>
+                            <p>Which is ${eventDetail.title}: ${eventDetail.description} that will
+                                take place at ${eventDetail.location} on ${eventDetail.date.toString()}
+                            </p>
+    
+                            <p>Thank You, We really appreciated and your attendance really matters.</p>
+                        `
+                    }]
                 }, (err, cb) => {
                     if(err) {
                         res.status(500).json({error: "Email not Send"})
@@ -339,6 +354,9 @@ exports.createSuggestion = (req, res) => {
     UserDetails.findOne({_id: req.body.userId})
     .then(user => {
         if(user){
+            if(req.body.email == '' || req.body.comment == '') {
+                return res.status(409).json({error: `Please all the field must be filled out`})
+            }
             let suggestions = {
                 email: req.body.email,
                 comment: req.body.comment,
@@ -369,5 +387,3 @@ exports.getSuggestion = (req, res) => {
     })
     .catch(err => res.status(500).json({error: 'error while getting sent messages'}))
 }
-
-

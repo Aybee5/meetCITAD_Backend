@@ -1,13 +1,10 @@
-let nodemailer = require('nodemailer')
+//Configuring maailjet for sending mails to users
+let mailjet = require ('node-mailjet')
+.connect(
+  process.env.MJ_APIKEY_PUBLIC, 
+  process.env.MJ_APIKEY_PRIVATE
+)
 
-let transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.USER_NAME,
-        pass: process.env.PASSWORD
-    }
-})
+let transporter = mailjet.post("send", {'version': 'v3.1'})
 
 module.exports = transporter

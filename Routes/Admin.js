@@ -7,7 +7,7 @@ let router = express.Router()
 
 router.post('/signup', AdminController.adminCreate)
 
-//authenticate event list /user/events
+//authenticate Admin list /user/events
 router.post('/login', AdminController.adminLogin)
 
 //retrive all suggestions

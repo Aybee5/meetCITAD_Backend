@@ -10,6 +10,9 @@
     "start": "nodemon main.js",
     "heroku-postbuild": "npm install --only=dev --no-shrinkwrap && npm run build"
   },
+  "engines": {
+    "node": "14.15.5"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",

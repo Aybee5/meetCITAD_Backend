@@ -1,6 +1,8 @@
 //Middleware Built in declaration
 let express = require('express')
 let mongoose = require('mongoose')
+let history = require('connect-history-api-fallback')
+let router = express.Router()
 let cors = require('cors')
 require('dotenv').config()
 
@@ -15,6 +17,7 @@ app.use(express.json())
 app.use('/Uploads',express.static('Uploads'))
 app.use(express.urlencoded({ extended: true }))
 app.use(cors());
+app.use(history())
 
 //Header Declarations
 app.use((req, res, next) => {
@@ -49,6 +52,11 @@ mongoose.Promise = global.Promise;
 app.use((req, res) => {
   res.status(404).send({ url: `404 Error ${req.originalUrl} not found please cross-check the url address` });
 });
+
+//Home of Backend Page
+router.get('/', function(req, res) {
+  res.send("Everything is set, server is running perfectly!!!");
+  });
 
 //Server Port Connection
 let PORT = process.env.PORT || 3030;
